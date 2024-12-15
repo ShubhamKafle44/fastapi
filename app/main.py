@@ -20,7 +20,7 @@ class Post(BaseModel):
     title: str
     content: str
     published: bool=True
-    rating: Optional[int] = None
+    # rating: Optional[int] = None
 
 
 while(True):
@@ -37,8 +37,9 @@ while(True):
 
 @app.get('/sqlalchemy')
 def get_posts_sqlalchemy(db: Session = Depends(get_db)):
-    posts = db.query(models.Post).all()  # Query all posts using SQLAlchemy ORM
+    posts = db.query(models.Post).all()
     return {"data": posts}
+
 
 
 
@@ -48,19 +49,33 @@ def root():
 
 
 @app.get('/posts')
-def get_posts():
-    cursor.execute("""SELECT * FROM social_media""")
-    posts = cursor.fetchall()
-    print(posts)
+def get_posts(db: Session =  Depends(get_db)):
+    # cursor.execute("""SELECT * FROM social_media""")
+    # posts = cursor.fetchall()
+    # print(posts)
+    posts = db.query(models.Post)
+    print(type(posts))
+    posts = db.query(models.Post).all()
+
+
     return {"data": posts}
 
 
 @app.post('/posts', status_code=status.HTTP_201_CREATED)
-def create_posts(post: Post):
-    cursor.execute("""INSERT INTO social_media(title, content, published) VALUES(%s, %s, %s) RETURNING*""",(post.title,post.content, post.published))
-    new_post =  cursor.fetchone()
-    conn.commit()
-    return{f"new_post created": new_post}
+def create_posts(post: Post, db: Session = Depends(get_db)):
+    # cursor.execute("""INSERT INTO social_media(title, content, published) VALUES(%s, %s, %s) RETURNING*""",(post.title,post.content, post.published))
+    # new_post =  cursor.fetchone()
+    # conn.commit()
+    # return{f"new_post created": new_post}
+    
+    new_post = models.Post(**post.dict())
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return {"data": new_post}
+
+
+
 
 @app.get('/posts/{id}')
 def get_posts(id: int, response: Response):
